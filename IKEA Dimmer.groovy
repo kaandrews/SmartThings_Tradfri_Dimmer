@@ -12,6 +12,7 @@
  *  
  *  Version Author		Note
  *  1.0		K Andrews	Initial release
+ *  1.1		K Andrews	Added Configure button
  *
  *	This device handler works with the IKEA Tradfri Wireless Dimmer puck
  *	A slow turn increased or decreased the level gradually
@@ -47,26 +48,30 @@ metadata {
 	}
 
     tiles(scale: 2) {
-		controlTile("mediumSlider", "device.level", "slider", height: 2, width: 4, inactiveLabel: false) {
-			state "level", action:"switch level.setLevel"
-		}
+	    controlTile("mediumSlider", "device.level", "slider", height: 2, width: 4, inactiveLabel: false) {
+		    state "level", action:"switch level.setLevel"
+	    }
+	    
+	    standardTile("configure", "device.configure", decoration: "flat") {
+		    state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
+	    }
 
-		valueTile("levelValue", "device.level", height: 2, width: 2) {
-			state "level", label:'${currentValue}', defaultState: true
-		}
-
-		main("levelValue")
-        details(["mediumSlider"])
+	    valueTile("levelValue", "device.level", height: 2, width: 2) {
+		    state "level", label:'${currentValue}', defaultState: true
+	    }
+	    
+	    main("levelValue")
+	    details(["mediumSlider","configure"])
     }
 }
 
 // Parse incoming device messages to generate events
 def parse(String description) {
 	log.trace "ZigBee DTH - Executing parse() for device ${device.displayName}"
-    
-    def iValue = device.currentValue("level")
+	
+	def iValue = device.currentValue("level")
 	def result = null
-    def descMap = zigbee.parseDescriptionAsMap(description)
+	def descMap = zigbee.parseDescriptionAsMap(description)
 
 	if (descMap && descMap.clusterInt == 0x0008) {
 		switch (descMap.commandInt) {
@@ -90,8 +95,8 @@ def parse(String description) {
 			state.direction = Integer.parseInt(descMap.data[0], 8)
 			break
 		case 0x07:
-        	// Stop turning
-            // Calculate change in level based on direction and time
+			// Stop turning
+			// Calculate change in level based on direction and time
 			long iTime = now() - state.start
 
 			log.debug "Stop turning after $iTime ms, direction: $state.direction"
@@ -134,7 +139,7 @@ def parse(String description) {
 		log.warn "DID NOT PARSE MESSAGE for description : $description"
 		log.debug "MAP ${descMap}"
 	}
-    return result
+	return result
 }
 
 def off() {
@@ -152,7 +157,7 @@ def setLevel(value) {
 
 def ping() {
 	log.trace "ZigBee DTH - Executing ping() for device ${device.displayName}"
-    refresh()
+	refresh()
 }
 
 def refresh() {
@@ -163,9 +168,9 @@ def installed() {
 	log.trace "ZigBee DTH - Executing installed() for device ${device.displayName}"
 
 	// Set default values
-    sendEvent(name:"level", value:0)
-    state.start = now()
-    state.direction = 0
+	sendEvent(name:"level", value:0)
+	state.start = now()
+	state.direction = 0
 }
 
 def uninstalled() {
@@ -174,5 +179,5 @@ def uninstalled() {
 
 def configure() {
 	log.trace "ZigBee DTH - Executing configure() for device ${device.displayName}"
-    zigbee.levelConfig()
+	zigbee.levelConfig()
 }
